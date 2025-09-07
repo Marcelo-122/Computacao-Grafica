@@ -1,7 +1,10 @@
 #include <iostream>
 #include <GL/glew.h>
 #include <GLFW//glfw3.h>
-#include <random> // For random number generation
+
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtc\type_ptr.hpp>
 
 using namespace std;
 
@@ -11,6 +14,13 @@ const GLint WIDTH = 800, HEIGHT = 600;
 // shaderProgram é qual programa estou rodando 
 // todo programa pode ser chamado de shader
 GLuint VAO, VBO, shaderProgram;
+
+float toRadians = 3.1415 / 180.0f;
+
+bool direction = false, directionSize = false;
+float triOffset = 0.0f, triOffsetMax = 0.7f, triOffsetMin = -0.7f, triIncrement = 0.01f;
+float triOffsetSize = 0.2f, triOffsetSizeMax = 1.2f, triOffsetSizeMin = 0.2f, triOffsetSizeIncrement = 0.01f;
+float triCurrentAngle = 0.0f, triAngleIncrement = 1.0f;
 
 // aqui estamos fazendo um programa (shader) em GLSL
 
@@ -23,9 +33,10 @@ static const char* vertexShader = "                                             
 // estou passando um argumento de entrada na primeira posiçâo                              \n\
 // esse argumento deve ser um vetor de duas posições                                       \n\
 layout(location=0) in vec2 pos;                                                            \n\
-                                                                                           \n\
+uniform mat4 model;                                                                        \n\
+																						   \n\
 void main() {                                                                              \n\
-	gl_Position = vec4(pos.x, pos.y, 0.0, 1.0);                                            \n\
+	gl_Position = model * vec4(pos.x, pos.y, 0.0, 1.0);                                    \n\
 }                                                                                          \n\
 ";
 
@@ -86,19 +97,6 @@ void add_shader(GLuint program, const char* shaderCode, GLenum type) {
 	// tratar os erros
 
 	glAttachShader(program, _shader);
-}
-
-float generateRandomFloat(float min, float max) {
-	if (min >= max) {
-		throw std::invalid_argument("Invalid range: min must be less than max.");
-	}
-
-	// Create a random device and seed the generator
-	std::random_device rd; // Non-deterministic random number generator
-	std::mt19937 generator(rd()); // Mersenne Twister engine seeded with rd()
-	std::uniform_real_distribution<float> distribution(min, max); // Uniform distribution in [min, max)
-
-	return distribution(generator);
 }
 
 void add_program() {
@@ -165,8 +163,37 @@ int main() {
 
 		//Altera cor do triangulo
 		GLint uniformColor = glGetUniformLocation(shaderProgram, "triColor");
-		printf("%d", uniformColor);
-		glUniform3f(uniformColor, generateRandomFloat(0.0f, 1.0f), generateRandomFloat(0.0f, 1.0f), generateRandomFloat(0.0f, 1.0f));
+		glUniform3f(uniformColor, 1.0f, 1.0f, 1.0f);
+
+		//Movimenta o triangulo
+		if (!direction)
+			triOffset += triIncrement;
+		else
+			triOffset -= triIncrement;
+
+		if (triOffset > triOffsetMax || triOffset < triOffsetMin)
+			direction = !direction;
+
+		triCurrentAngle += triAngleIncrement;
+		if (triCurrentAngle >= 360)
+			triCurrentAngle = 0;
+
+		if (!directionSize)
+			triOffsetSize += triOffsetSizeIncrement;
+		else
+			triOffsetSize -= triOffsetSizeIncrement;
+
+		if (triOffsetSize > triOffsetSizeMax || triOffsetSize < triOffsetSizeMin)
+			directionSize = !directionSize;
+
+		GLint uniformModel = glGetUniformLocation(shaderProgram, "model");
+		glm::mat4 model(1.0f);
+
+		model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(triOffsetSize, triOffsetSize, 0.0f));
+		model = glm::rotate(model, triCurrentAngle * toRadians, glm::vec3(1.0f, 1.0f, 1.0f));
+
+		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 
 		//Desenhando o triangulo
 		glUseProgram(shaderProgram);
