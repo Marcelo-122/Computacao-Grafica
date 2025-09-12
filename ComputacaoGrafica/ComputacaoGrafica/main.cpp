@@ -13,13 +13,13 @@ const GLint WIDTH = 800, HEIGHT = 600;
 // VBO é o ponteiro para os meus dados brutos, são os dados do objeto a ser representado pelo VAO 
 // shaderProgram é qual programa estou rodando 
 // todo programa pode ser chamado de shader
-GLuint VAO, VBO, shaderProgram;
+GLuint VAO, VBO, IBO, shaderProgram;
 
 float toRadians = 3.1415 / 180.0f;
 
 bool direction = false, directionSize = false;
 float triOffset = 0.0f, triOffsetMax = 0.7f, triOffsetMin = -0.7f, triIncrement = 0.01f;
-float triOffsetSize = 0.2f, triOffsetSizeMax = 1.2f, triOffsetSizeMin = 0.2f, triOffsetSizeIncrement = 0.01f;
+float triOffsetSize = 0.2f, triOffsetSizeMax = 1.2f, triOffsetSizeMin = 0.2f, triOffsetSizeIncrement = 0.005f;
 float triCurrentAngle = 0.0f, triAngleIncrement = 1.0f;
 
 // aqui estamos fazendo um programa (shader) em GLSL
@@ -32,11 +32,14 @@ static const char* vertexShader = "                                             
 // passando um argumento para o inicio do programa (args do C//                            \n\
 // estou passando um argumento de entrada na primeira posiçâo                              \n\
 // esse argumento deve ser um vetor de duas posições                                       \n\
-layout(location=0) in vec2 pos;                                                            \n\
+layout(location=0) in vec3 pos;                                                            \n\
 uniform mat4 model;                                                                        \n\
+uniform mat4 projection;																   \n\
+out vec4 vCol;																		       \n\
 																						   \n\
 void main() {                                                                              \n\
-	gl_Position = model * vec4(pos.x, pos.y, 0.0, 1.0);                                    \n\
+	gl_Position = projection * model * vec4(pos, 1.0f);                                    \n\
+	vCol = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);                                             \n\
 }                                                                                          \n\
 ";
 
@@ -47,19 +50,30 @@ static const char* fragmentShader = "                                           
 #version 330                                                                               \n\
                                                                                            \n\
 // diferente da entrada por layout, uniform é uma entrada em tempo de execução             \n\
+in vec4 vCol;																			   \n\
 uniform vec3 triColor;																       \n\
 out vec4 color;                                                                            \n\
                                                                                            \n\
 void main() {                                                                              \n\
-	color = vec4(triColor, 1.0);                                                           \n\
+	color = vCol;                                                                          \n\
 }                                                                                          \n\
 ";
 
 void create_triangle() {
-	GLfloat vertices[] = { // nosso buffer de vertíces
-		0.0f, 1.0f, // vertice 1 
-		-1.0f, -1.0f, // vertice 2
-		1.0f, -1.0f // vertice 3
+	unsigned int indices[] = {
+		0, 1, 2, //BASE
+		0, 1, 3, //Esquerda
+		0, 2, 3, //Direita
+		1, 2, 3, //Frente
+	};
+
+
+	GLfloat vertices[] = {  // nosso buffer de vertíces
+		0.0f, 1.0f, 0.0f,   // vertice 1 
+		-1.0f, -1.0f, 0.0f, // vertice 2
+		1.0f, -1.0f, 0.0f,  // vertice 3
+		0.0f, 0.0f, 1.0f    // vertice 4
+
 	};
 
 	// iniciar um VAO
@@ -71,11 +85,16 @@ void create_triangle() {
 	// agora tudo o que vamos criar será nesse espaço de memória como os pontos da nossa tela
 	glBindVertexArray(VAO);
 
+	glGenBuffers(1, &IBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 
 	glGenBuffers(1, &VBO); // alocar um buffer
 	glBindBuffer(GL_ARRAY_BUFFER, VBO); // a partir desse momento estamos modificando esse buffer
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // explicando onde estão os dados
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0); // explicando como interpretar esses dados
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0); // explicando como interpretar esses dados
 	glEnableVertexAttribArray(0);  // location
 
 	// deixar de apontar para o VAO e VBO
@@ -154,23 +173,24 @@ int main() {
 	create_triangle();
 	add_program();
 
+	glm::mat4 projection = glm::perspective(45.0f, (GLfloat)bufferWidth / (GLfloat)bufferHeight, 0.1f, 100.0f);
+
 	while (!glfwWindowShouldClose(window)) {
 		//Cor de fundo da janela
 
-		glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		//Altera cor do triangulo
 		GLint uniformColor = glGetUniformLocation(shaderProgram, "triColor");
-		glUniform3f(uniformColor, 1.0f, 1.0f, 1.0f);
+		glUniform3f(uniformColor, 1.0f, 1.0f, 0.0f);
 
 		//Movimenta o triangulo
 		if (!direction)
 			triOffset += triIncrement;
 		else
 			triOffset -= triIncrement;
-
 		if (triOffset > triOffsetMax || triOffset < triOffsetMin)
 			direction = !direction;
 
@@ -182,24 +202,33 @@ int main() {
 			triOffsetSize += triOffsetSizeIncrement;
 		else
 			triOffsetSize -= triOffsetSizeIncrement;
-
 		if (triOffsetSize > triOffsetSizeMax || triOffsetSize < triOffsetSizeMin)
 			directionSize = !directionSize;
 
 		GLint uniformModel = glGetUniformLocation(shaderProgram, "model");
+		GLint uniformProjection = glGetUniformLocation(shaderProgram, "projection");
 		glm::mat4 model(1.0f);
 
-		model = glm::translate(model, glm::vec3(triOffset, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(triOffsetSize, triOffsetSize, 0.0f));
-		model = glm::rotate(model, triCurrentAngle * toRadians, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
+		model = glm::scale(model, glm::vec3(0.4f, 0.4f, 0.0f));
+		model = glm::rotate(model, triCurrentAngle * toRadians, glm::vec3(0.7f, 0.5f, 1.0f));
 
 		glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+		glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
 
 		//Desenhando o triangulo
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+		glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+		/*
+		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3); //Tringulo, começando na posição 0, Numero de pontos 3
 		glBindVertexArray(0);
+		*/
 
 
 		glfwSwapBuffers(window);
