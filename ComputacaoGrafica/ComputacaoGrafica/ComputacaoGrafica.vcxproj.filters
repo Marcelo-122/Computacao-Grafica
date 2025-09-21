@@ -13,13 +13,45 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Arquivos de Origem\Class">
+      <UniqueIdentifier>{d4772b67-d5ca-45a5-bf3e-4d53dbb52882}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Arquivos de Origem\Shaders">
+      <UniqueIdentifier>{a1fe7d4c-a03b-44db-9a83-5b7678acb008}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="VertexShader.glsl">
+      <Filter>Arquivos de Origem\Shaders</Filter>
+    </None>
+    <None Include="FragmentShader.glsl">
+      <Filter>Arquivos de Origem\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Arquivos de Origem\Class</Filter>
+    </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Arquivos de Origem\Class</Filter>
+    </ClCompile>
+    <ClCompile Include="Window.cpp">
+      <Filter>Arquivos de Origem\Class</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Arquivos de Origem</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Mesh.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="Window.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
