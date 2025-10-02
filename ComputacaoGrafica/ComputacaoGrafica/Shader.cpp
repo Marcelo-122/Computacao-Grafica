@@ -1,4 +1,4 @@
-#include "Shader.h"
+ï»¿#include "Shader.h"
 
 Shader::Shader() {
 	shaderID = 0;
@@ -6,38 +6,49 @@ Shader::Shader() {
 	uniformProjection = 0;
 }
 
+Shader::~Shader() {
+	if (shaderID != 0) {
+		glDeleteProgram(shaderID);
+		shaderID = 0;
+	}
+	uniformModel = 0;
+	uniformProjection = 0;
+}
+
+void Shader::UseProgram() {
+	glUseProgram(shaderID);
+}
+
 void Shader::CreateFromString(const char* vertexCode, const char* fragmentCode) {
 	CompileShader(vertexCode, fragmentCode);
 }
 
-void Shader::CreateFromFiles(const char* vertexLocation, const char* fragmentLocation) {
-	std::string vertexString = ReadFile(vertexLocation);
-	std::string fragmentString = ReadFile(fragmentLocation);
+void Shader::CreateFromFile(const char* vertexLocation, const char* fragmentLocation) {
+	std::string vertexString = ReadFile(vertexLocation); //recebe os valores do arquivo
+	std::string fragmentString = ReadFile(fragmentLocation); //recebe os valores do arquivo
 
-	const char* vertexCode = vertexString.c_str();
-	const char* fragmentCode = fragmentString.c_str();
+	const char* vertexCode = vertexString.c_str(); //converte string para char
+	const char* fragmentCode = fragmentString.c_str(); //convert string para char
 
-	CompileShader(vertexCode, fragmentCode);
+	CompileShader(vertexCode, fragmentCode); //executa a compilaï¿½ï¿½o do cï¿½digo
 }
 
 std::string Shader::ReadFile(const char* fileLocation) {
-	std::string content;
-	std::ifstream fileStrem(fileLocation, std::ios::in);
+	std::string content = ""; //variï¿½vel de retorno
+	std::ifstream fileStrem(fileLocation, std::ios::in); //abre o arquivo
 
-	if (!fileStrem.is_open()) {
+	if (!fileStrem.is_open()) { //se o arquivo nï¿½o estiver aberto
 		printf("Erro ao tentar abrir o arquivo %s", fileLocation);
 		return "";
 	}
 
-	std::string line = "";
-	while (!fileStrem.eof()) {
-		std::getline(fileStrem, line);
-		content.append(line + "\n");
+	std::string line; //define uma linha
+	while (!fileStrem.eof()) { //roda atï¿½ o final do arquivo (End of File)
+		std::getline(fileStrem, line); //adiciona a linha na variï¿½vel
+		content.append(line + '\n'); //adiciona a varï¿½vel no retorno
 	}
-
-	fileStrem.close();
-	return content;
-
+	fileStrem.close(); //fecha o arquivo
+	return content; //retorna o conteï¿½do
 }
 
 
@@ -57,82 +68,58 @@ void Shader::CompileShader(const char* vertexCode, const char* fragmentCode) {
 	//4. Criar o link do programa
 	glLinkProgram(shaderID); //Programa
 
-	//5. Validação de link do programa
+	//5. Validaï¿½ï¿½o de link do programa
 	GLint result = 0;
-	glGetProgramiv(shaderID, GL_LINK_STATUS, &result); //Colocar o valor do o status da compilação na variável result
+	glGetProgramiv(shaderID, GL_LINK_STATUS, &result); //Colocar o valor do o status da compilaï¿½ï¿½o na variï¿½vel result
 	if (!result) {
 		GLchar log[1024] = { 0 };
-		glGetProgramInfoLog(shaderID, sizeof(log), NULL, log); //Busca o texto caso de algum erro na compila??o
+		glGetProgramInfoLog(shaderID, sizeof(log), NULL, log); //Busca o texto caso de algum erro na compilaï¿½ï¿½o
 		printf("Erro ao linkar o programa: '%s'\n", log);
 		return;
 	}
 
-	//6. Validação do programa
+	//6. Validaï¿½ï¿½o do programa
 	glValidateProgram(shaderID);
 	result = 0;
-	glGetProgramiv(shaderID, GL_VALIDATE_STATUS, &result); //Colocar o valor do o status da compilação na variável result
+	glGetProgramiv(shaderID, GL_VALIDATE_STATUS, &result); //Colocar o valor do o status da compilaï¿½ï¿½o na variï¿½vel result
 	if (!result) {
 		GLchar log[1024] = { 0 };
-		glGetProgramInfoLog(shaderID, sizeof(log), NULL, log); //Busca o texto caso de algum erro na compilação
+		glGetProgramInfoLog(shaderID, sizeof(log), NULL, log); //Busca o texto caso de algum erro na compilaï¿½ï¿½o
 		printf("Erro ao validar o programa: '%s'\n", log);
 		return;
 	}
 
-	uniformModel = glGetUniformLocation(shaderID, "model"); //Procura a entrada chamada model
 	uniformProjection = glGetUniformLocation(shaderID, "projection"); //Procura a entrada chamada projection
+	uniformModel = glGetUniformLocation(shaderID, "model"); //Procura a entrada chamada model
+	uniformView = glGetUniformLocation(shaderID, "view"); //Procura a entrada chamada view
 }
 
 void Shader::AddShader(GLenum shaderType, const char* shaderCode) {
-	//Começamos a compilar cada shader
+	//Comeï¿½amos a compilar cada shader
 	//1. Criar um shader
 	GLuint shader = glCreateShader(shaderType);
 
-	//2. Atribui o código do GLSL para o shader
-	//2.1 Guarda e converte a variável char em GLchar
+	//2. Atribui o cï¿½digo do GLSL para o shader
+	//2.1 Guarda e converte a variï¿½vel char em GLchar
 	const GLchar* code[1];
 	code[0] = shaderCode;
 
-	//2.2 Anexa o código ao shader
-	glShaderSource(shader, 1, code, NULL); //1: número de códigos que estão sendo enviados | NULL: final da string, termina o código
+	//2.2 Anexa o cï¿½digo ao shader
+	glShaderSource(shader, 1, code, NULL); //1: nï¿½mero de cï¿½digos que estï¿½o sendo enviados | NULL: final da string, termina o cï¿½digo
 
 	//3. Compila o shader
 	glCompileShader(shader); //compila o shader
 
-	//4. Tratamento de erros de compilação
+	//4. Tratamento de erros de compilaï¿½ï¿½o
 	GLint result = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &result); //Colocar o valor do o status da compilação na variável result
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &result); //Colocar o valor do o status da compilaï¿½ï¿½o na variï¿½vel result
 	if (!result) {
 		GLchar log[1024] = { 0 };
-		glGetProgramInfoLog(shader, sizeof(log), NULL, log); //Busca o texto caso de algum erro na compilação
+		glGetProgramInfoLog(shader, sizeof(log), NULL, log); //Busca o texto caso de algum erro na compilaï¿½ï¿½o
 		printf("Erro ao compilar o %d shader '%s'\n", shaderType, log);
 		return;
 	}
 
 	//5. Anexa o shader ao programa
-	glAttachShader(shaderID, shader); //Anexa shader ao programa "variável global"
-}
-
-void Shader::UseShader() {
-	glUseProgram(shaderID);
-}
-
-void Shader::ClearShader() {
-	if (shaderID != 0) {
-		glDeleteProgram(shaderID);
-		shaderID = 0;
-	}
-	uniformModel = 0;
-	uniformProjection = 0;
-}
-
-Shader::~Shader() {
-	ClearShader();
-}
-
-GLuint Shader::GetProjectionLocation() {
-	return uniformProjection;
-}
-
-GLuint Shader::GetModelLocation() {
-	return uniformModel;
+	glAttachShader(shaderID, shader); //Anexa shader ao programa "variï¿½vel global"
 }
