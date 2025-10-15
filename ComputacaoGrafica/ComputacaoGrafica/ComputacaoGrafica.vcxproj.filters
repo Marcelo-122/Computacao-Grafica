@@ -48,6 +48,9 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Arquivos de Origem\Class</Filter>
     </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>Arquivos de Origem\Class</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Mesh.h">
@@ -63,6 +66,9 @@
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
     <ClInclude Include="Texture.h">
+      <Filter>Arquivos de Cabeçalho</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
       <Filter>Arquivos de Cabeçalho</Filter>
     </ClInclude>
   </ItemGroup>
